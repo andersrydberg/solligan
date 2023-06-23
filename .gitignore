@@ -28,3 +28,5 @@ hs_err_pid*
 replay_pid*
 .gitsecret/keys/random_seed
 !*.secret
+spring/src/main/resources/application.properties
+spring/target/classes/application.properties
