@@ -9,6 +9,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  latlong2: any
+  http: ^0.13.5
 
 dev_dependencies:
   flutter_test:
