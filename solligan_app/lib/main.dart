@@ -21,7 +21,10 @@ class MainApp extends StatelessWidget {
                 return const Center(child: CircularProgressIndicator());
               }
               if (snapshot.hasData) {
-                final data = snapshot.data;
+                final data = snapshot.data
+                  ?..removeWhere((element) => element.value == null)
+                  ..sort((a, b) => double.parse(b.value!.value)
+                      .compareTo(double.parse(a.value!.value)));
                 return ListView.builder(
                   itemCount: data!.length,
                   itemBuilder: (context, index) {

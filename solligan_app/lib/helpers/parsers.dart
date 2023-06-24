@@ -90,7 +90,7 @@ class Station {
 
 class Value {
   final DateTime date;
-  final dynamic value;
+  final String value;
   final String quality;
 
   Value({required this.date, required this.value, required this.quality});
@@ -100,7 +100,7 @@ class Value {
         case [
           {
             'date': int date,
-            'value': final value,
+            'value': String value,
             'quality': String quality,
           }
         ]) {
