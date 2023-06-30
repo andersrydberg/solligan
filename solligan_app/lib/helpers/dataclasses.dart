@@ -1,27 +1,4 @@
-import 'dart:convert';
-import 'dart:io';
-
-import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:http/http.dart' as http;
-
-Future<List<Station>> getTemperatureData() async {
-  final url = Uri.parse(
-      'https://opendata-download-metobs.smhi.se/api/version/1.0/parameter/1/station-set/all/period/latest-hour/data.json');
-  final response = await http.get(url);
-
-  if (response.statusCode == 200) {
-    final body = json.decode(response.body);
-    if (body case {'updated': int updated, 'station': List stations}) {
-      return [for (final station in stations) Station.fromJson(station)];
-    } else {
-      throw const FormatException("Unexpected json format");
-    }
-  } else {
-    debugPrint("status code ${response.statusCode}");
-    throw const HttpException('');
-  }
-}
 
 class Station {
   final String key;

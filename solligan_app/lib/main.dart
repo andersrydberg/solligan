@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
-import 'helpers/parsers.dart';
+import 'package:provider/provider.dart';
+import 'package:solligan_app/helpers/observation_data_provider.dart';
+
+import 'package:solligan_app/screens/observations.dart';
 
 void main() {
   runApp(const MainApp());
@@ -10,41 +13,11 @@ class MainApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      home: Scaffold(
-          appBar: AppBar(
-            title: const Text('Senaste observationer'),
-          ),
-          body: FutureBuilder(
-            builder: (context, snapshot) {
-              if (!snapshot.hasData) {
-                return const Center(child: CircularProgressIndicator());
-              }
-              if (snapshot.hasData) {
-                final data = snapshot.data
-                  ?..removeWhere((element) => element.value == null)
-                  ..sort((a, b) => double.parse(b.value!.value)
-                      .compareTo(double.parse(a.value!.value)));
-                return ListView.builder(
-                  itemCount: data!.length,
-                  itemBuilder: (context, index) {
-                    final station = data[index];
-                    final name = station.name;
-                    final value = station.value?.value.toString();
-                    return ListTile(
-                      title: Text(name),
-                      trailing: Text(value ?? 'värde saknas'),
-                    );
-                  },
-                );
-              } else {
-                return const Center(
-                  child: Text('Kunde inte ladda temperaturdata'),
-                );
-              }
-            },
-            future: getTemperatureData(),
-          )),
+    return ChangeNotifierProvider(
+      create: (context) => ObservationDataProvider(),
+      child: const MaterialApp(
+        home: Observations(),
+      ),
     );
   }
 }
