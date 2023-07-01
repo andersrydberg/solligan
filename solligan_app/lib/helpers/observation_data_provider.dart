@@ -5,6 +5,22 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:solligan_app/helpers/dataclasses.dart';
 
+const List<String> monthsSwedish = [
+  '',
+  'januari',
+  'februari',
+  'mars',
+  'april',
+  'maj',
+  'juni',
+  'juli',
+  'augusti',
+  'september',
+  'oktober',
+  'november',
+  'december'
+];
+
 class ObservationDataProvider extends ChangeNotifier {
   final Map<String, Parameter> _data = {};
   String? _selectedParameter;
@@ -17,7 +33,30 @@ class ObservationDataProvider extends ChangeNotifier {
     if (await _data[parameter]!.update()) notifyListeners();
   }
 
+  void requestUpdate() {
+    _data[_selectedParameter]?.update();
+  }
+
   List<Station>? get data => _data[_selectedParameter]?.filteredData;
+
+  String? get readableDate {
+    DateTime? updated = _data[_selectedParameter]?._updated;
+    if (updated == null) return null;
+    final now = DateTime.now();
+    switch (now.difference(updated).inDays) {
+      case 0:
+        return 'idag';
+      case 1:
+        return 'igår';
+    }
+    return '${updated.day} ${monthsSwedish[updated.month]}';
+  }
+
+  String? get readableTime {
+    DateTime? updated = _data[_selectedParameter]?._updated;
+    if (updated == null) return null;
+    return 'kl. ${updated.hour.toString().padLeft(2, '0')}:${updated.minute.toString().padLeft(2, '0')}';
+  }
 }
 
 class Parameter {
@@ -70,6 +109,7 @@ class Parameter {
 
   // TODO
   void _filterData() {
+    _filteredData.clear();
     _filteredData.addAll(_allData);
   }
 }

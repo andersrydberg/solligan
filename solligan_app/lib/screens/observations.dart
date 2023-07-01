@@ -22,7 +22,21 @@ class _ObservationsState extends State<Observations> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Senaste observationer'),
+        title: const Text('Temperatur'),
+        actions: <Widget>[
+          Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: <Widget>[
+              Text(dataModel.readableDate ?? ''),
+              Text(dataModel.readableTime ?? ''),
+            ],
+          ),
+          IconButton(
+              onPressed: () {
+                dataModel.requestUpdate();
+              },
+              icon: const Icon(Icons.update))
+        ],
       ),
       body: Builder(
         builder: (context) {
@@ -43,6 +57,14 @@ class _ObservationsState extends State<Observations> {
             },
           );
         },
+      ),
+      drawer: Drawer(
+        child: ListView(
+          children: const <Widget>[
+            Text('Hello'),
+            Text('World!'),
+          ],
+        ),
       ),
     );
   }
