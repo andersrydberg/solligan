@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:solligan_app/helpers/observation_data_provider.dart';
@@ -13,9 +15,9 @@ class _ObservationsState extends State<Observations>
     with TickerProviderStateMixin {
   final _textFieldController = TextEditingController();
   late final _iconAnimationController =
-      AnimationController(vsync: this, duration: const Duration(seconds: 1));
-  late final _rotateAnimation =
-      Tween<double>(begin: 360.0, end: 0.0).animate(_iconAnimationController);
+      AnimationController(vsync: this, duration: const Duration(seconds: 20));
+  late final _rotateAnimation = Tween<double>(begin: 0.0, end: 80 * math.pi)
+      .animate(_iconAnimationController);
 
   @override
   void initState() {
@@ -23,6 +25,12 @@ class _ObservationsState extends State<Observations>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<ObservationDataProvider>().init();
     });
+  }
+
+  @override
+  void dispose() {
+    _iconAnimationController.dispose();
+    super.dispose();
   }
 
   @override
