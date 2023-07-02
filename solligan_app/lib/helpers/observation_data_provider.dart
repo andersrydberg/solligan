@@ -36,17 +36,17 @@ class ObservationDataProvider extends ChangeNotifier {
   // getters and setters
   List<Station>? get data => _data[_selectedParameter]?.filteredData;
 
-  void setParameter(String parameter) async {
+  set selectedParameter(String parameter) {
     if (_selectedParameter == parameter) return;
 
     _selectedParameter = parameter;
     if (_data.containsKey(parameter)) {
       _data[parameter]!.applyFilters();
+      notifyListeners();
     } else {
       _data[parameter] = Parameter(this, parameter);
-      await _data[parameter]!.update();
+      _data[parameter]!.update().then((_) => notifyListeners);
     }
-    notifyListeners();
   }
 
   String get searchString => _searchString;
@@ -104,11 +104,13 @@ class ObservationDataProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void requestUpdate() async {
-    await _data[_selectedParameter]?.update();
-    debugPrint('ObservationDataProvider.requestUpdate: notifying listeners');
-    debugPrint('(has listeners?: ${hasListeners.toString()})');
-    notifyListeners();
+  Future<bool> requestUpdate() async {
+    final updated = await _data[_selectedParameter]!.update();
+    if (updated) {
+      notifyListeners();
+      return true;
+    }
+    return false;
   }
 }
 
@@ -161,9 +163,13 @@ class Parameter {
     }
   }
 
-  Future<void> update() async {
+  Future<bool> update() async {
     debugPrint('Parameter.update: entering');
-    if (await _updateNeeded()) await _update();
+    if (await _updateNeeded()) {
+      await _update();
+      return true;
+    }
+    return false;
   }
 
   void applyFilters() {

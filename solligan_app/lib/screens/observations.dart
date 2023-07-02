@@ -9,8 +9,13 @@ class Observations extends StatefulWidget {
   State<Observations> createState() => _ObservationsState();
 }
 
-class _ObservationsState extends State<Observations> {
+class _ObservationsState extends State<Observations>
+    with TickerProviderStateMixin {
   final _textFieldController = TextEditingController();
+  late final _iconAnimationController =
+      AnimationController(vsync: this, duration: const Duration(seconds: 1));
+  late final _rotateAnimation =
+      Tween<double>(begin: 360.0, end: 0.0).animate(_iconAnimationController);
 
   @override
   void initState() {
@@ -35,16 +40,30 @@ class _ObservationsState extends State<Observations> {
               Text(dataModel.readableTime ?? ''),
             ],
           ),
+          AnimatedUpdateIcon(
+            animation: _rotateAnimation,
+            callback: () {
+              _iconAnimationController.forward();
+              dataModel.requestUpdate().then((updated) {
+                _iconAnimationController.stop();
+                _iconAnimationController.reset();
+                if (!updated) {
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                    content: Text('Inga nya observationer än...'),
+                  ));
+                }
+              });
+            },
+          ),
           IconButton(
-              onPressed: dataModel.requestUpdate,
-              icon: const Icon(Icons.update)),
-          IconButton(
-              onPressed: () {
-                showModalBottomSheet(
-                    context: context,
-                    builder: (context) => const OptionsBottomSheet());
-              },
-              icon: const Icon(Icons.tune)),
+            onPressed: () {
+              showModalBottomSheet(
+                context: context,
+                builder: (context) => const OptionsBottomSheet(),
+              );
+            },
+            icon: const Icon(Icons.tune),
+          ),
         ],
       ),
       body: Column(
@@ -91,7 +110,6 @@ class _ObservationsState extends State<Observations> {
         ],
       ),
       drawer: Drawer(
-        backgroundColor: Theme.of(context).primaryColor,
         child: ListView(
           children: const <Widget>[
             Text('Hello'),
@@ -135,56 +153,81 @@ class _OptionsBottomSheetState extends State<OptionsBottomSheet> {
           title: Text('Sortera stationerna:'),
         ),
         RadioListTile(
-            title: const Text('i bokstavsordning'),
-            value: SortOption.alphabetic,
-            groupValue: selected,
-            onChanged: (value) {
-              setState(() {
-                selected = value;
-              });
-              if (value != null) dataModel.selectedSortOption = value;
-            }),
+          title: const Text('i bokstavsordning'),
+          value: SortOption.alphabetic,
+          groupValue: selected,
+          onChanged: (value) {
+            setState(() {
+              selected = value;
+            });
+            if (value != null) dataModel.selectedSortOption = value;
+          },
+        ),
         RadioListTile(
-            title: const Text('från nord till syd'),
-            value: SortOption.northToSouth,
-            groupValue: selected,
-            onChanged: (value) {
-              setState(() {
-                selected = value;
-              });
-              if (value != null) dataModel.selectedSortOption = value;
-            }),
+          title: const Text('från nord till syd'),
+          value: SortOption.northToSouth,
+          groupValue: selected,
+          onChanged: (value) {
+            setState(() {
+              selected = value;
+            });
+            if (value != null) dataModel.selectedSortOption = value;
+          },
+        ),
         RadioListTile(
-            title: const Text('från syd till nord'),
-            value: SortOption.southToNorth,
-            groupValue: selected,
-            onChanged: (value) {
-              setState(() {
-                selected = value;
-              });
-              if (value != null) dataModel.selectedSortOption = value;
-            }),
+          title: const Text('från syd till nord'),
+          value: SortOption.southToNorth,
+          groupValue: selected,
+          onChanged: (value) {
+            setState(() {
+              selected = value;
+            });
+            if (value != null) dataModel.selectedSortOption = value;
+          },
+        ),
         RadioListTile(
-            title: const Text('från högst värde till lägst'),
-            value: SortOption.highToLow,
-            groupValue: selected,
-            onChanged: (value) {
-              setState(() {
-                selected = value;
-              });
-              if (value != null) dataModel.selectedSortOption = value;
-            }),
+          title: const Text('från högst värde till lägst'),
+          value: SortOption.highToLow,
+          groupValue: selected,
+          onChanged: (value) {
+            setState(() {
+              selected = value;
+            });
+            if (value != null) dataModel.selectedSortOption = value;
+          },
+        ),
         RadioListTile(
-            title: const Text('från lägst värde till högst'),
-            value: SortOption.lowToHigh,
-            groupValue: selected,
-            onChanged: (value) {
-              setState(() {
-                selected = value;
-              });
-              if (value != null) dataModel.selectedSortOption = value;
-            }),
+          title: const Text('från lägst värde till högst'),
+          value: SortOption.lowToHigh,
+          groupValue: selected,
+          onChanged: (value) {
+            setState(() {
+              selected = value;
+            });
+            if (value != null) dataModel.selectedSortOption = value;
+          },
+        ),
       ],
+    );
+  }
+}
+
+class AnimatedUpdateIcon extends AnimatedWidget {
+  final VoidCallback callback;
+  final Animation<double> animation;
+
+  const AnimatedUpdateIcon(
+      {Key? key, required this.animation, required this.callback})
+      : super(key: key, listenable: animation);
+
+  @override
+  Widget build(BuildContext context) {
+    return Transform.rotate(
+      angle: animation.value,
+      child: IconButton(
+        icon: const Icon(Icons.update),
+        onPressed: callback,
+      ),
     );
   }
 }
