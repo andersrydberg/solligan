@@ -24,13 +24,14 @@ const List<String> monthsSwedish = [
 const smhiUrlPrefix =
     'https://opendata-download-metobs.smhi.se/api/version/1.0/parameter/';
 
-// enum SortOption { }
+enum SortOption { alphabetic, northToSouth, southToNorth, highToLow, lowToHigh }
 
 class ObservationDataProvider extends ChangeNotifier {
   final Map<String, Parameter> _data = {};
   String _selectedParameter = '1';
   String _searchString = '';
-  bool omitMissing = false;
+  bool _omitMissing = false;
+  SortOption _selectedSortOption = SortOption.alphabetic;
 
   // getters and setters
   List<Station>? get data => _data[_selectedParameter]?.filteredData;
@@ -52,6 +53,22 @@ class ObservationDataProvider extends ChangeNotifier {
 
   set searchString(String searchString) {
     _searchString = searchString;
+    _data[_selectedParameter]?.applyFilters();
+    notifyListeners();
+  }
+
+  bool get omitMissing => _omitMissing;
+
+  set omitMissing(bool value) {
+    _omitMissing = value;
+    _data[_selectedParameter]?.applyFilters();
+    notifyListeners();
+  }
+
+  SortOption get selectedSortOption => _selectedSortOption;
+
+  set selectedSortOption(SortOption option) {
+    _selectedSortOption = option;
     _data[_selectedParameter]?.applyFilters();
     notifyListeners();
   }
@@ -167,6 +184,35 @@ class Parameter {
     }
 
     // 3. sort
+    switch (_provider.selectedSortOption) {
+      case SortOption.alphabetic:
+        // already "sorted" (do nothing)
+        break;
+      case SortOption.northToSouth:
+        _filteredData
+            .sort((a, b) => b.latLng.latitude.compareTo(a.latLng.latitude));
+      case SortOption.southToNorth:
+        _filteredData
+            .sort((a, b) => a.latLng.latitude.compareTo(b.latLng.latitude));
+      case SortOption.highToLow:
+        _filteredData.sort((a, b) {
+          final aValue = a.value?.value;
+          final bValue = b.value?.value;
+          if (aValue == null && bValue == null) return 0;
+          if (aValue == null) return 1;
+          if (bValue == null) return -1;
+          return double.parse(bValue).compareTo(double.parse(aValue));
+        });
+      case SortOption.lowToHigh:
+        _filteredData.sort((a, b) {
+          final aValue = a.value?.value;
+          final bValue = b.value?.value;
+          if (aValue == null && bValue == null) return 0;
+          if (aValue == null) return 1;
+          if (bValue == null) return -1;
+          return double.parse(aValue).compareTo(double.parse(bValue));
+        });
+    }
   }
 }
 
