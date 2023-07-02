@@ -30,14 +30,21 @@ class _ObservationsState extends State<Observations> {
         actions: <Widget>[
           Column(
             mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[
+            children: [
               Text(dataModel.readableDate ?? ''),
               Text(dataModel.readableTime ?? ''),
             ],
           ),
           IconButton(
               onPressed: dataModel.requestUpdate,
-              icon: const Icon(Icons.update))
+              icon: const Icon(Icons.update)),
+          IconButton(
+              onPressed: () {
+                showModalBottomSheet(
+                    context: context,
+                    builder: (context) => const OptionsBottomSheet());
+              },
+              icon: const Icon(Icons.tune)),
         ],
       ),
       body: Column(
@@ -92,6 +99,92 @@ class _ObservationsState extends State<Observations> {
           ],
         ),
       ),
+    );
+  }
+}
+
+class OptionsBottomSheet extends StatefulWidget {
+  const OptionsBottomSheet({super.key});
+
+  @override
+  State<OptionsBottomSheet> createState() => _OptionsBottomSheetState();
+}
+
+class _OptionsBottomSheetState extends State<OptionsBottomSheet> {
+  @override
+  Widget build(BuildContext context) {
+    final dataModel = Provider.of<ObservationDataProvider>(context);
+    SortOption? selected = dataModel.selectedSortOption;
+    bool? checked = dataModel.omitMissing;
+
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        CheckboxListTile(
+          title: const Text('Dölj saknade värden'),
+          value: checked,
+          controlAffinity: ListTileControlAffinity.leading,
+          onChanged: (value) {
+            setState(() {
+              checked = value;
+            });
+            if (value != null) dataModel.omitMissing = value;
+          },
+        ),
+        const ListTile(
+          title: Text('Sortera stationerna:'),
+        ),
+        RadioListTile(
+            title: const Text('i bokstavsordning'),
+            value: SortOption.alphabetic,
+            groupValue: selected,
+            onChanged: (value) {
+              setState(() {
+                selected = value;
+              });
+              if (value != null) dataModel.selectedSortOption = value;
+            }),
+        RadioListTile(
+            title: const Text('från nord till syd'),
+            value: SortOption.northToSouth,
+            groupValue: selected,
+            onChanged: (value) {
+              setState(() {
+                selected = value;
+              });
+              if (value != null) dataModel.selectedSortOption = value;
+            }),
+        RadioListTile(
+            title: const Text('från syd till nord'),
+            value: SortOption.southToNorth,
+            groupValue: selected,
+            onChanged: (value) {
+              setState(() {
+                selected = value;
+              });
+              if (value != null) dataModel.selectedSortOption = value;
+            }),
+        RadioListTile(
+            title: const Text('från högst värde till lägst'),
+            value: SortOption.highToLow,
+            groupValue: selected,
+            onChanged: (value) {
+              setState(() {
+                selected = value;
+              });
+              if (value != null) dataModel.selectedSortOption = value;
+            }),
+        RadioListTile(
+            title: const Text('från lägst värde till högst'),
+            value: SortOption.lowToHigh,
+            groupValue: selected,
+            onChanged: (value) {
+              setState(() {
+                selected = value;
+              });
+              if (value != null) dataModel.selectedSortOption = value;
+            }),
+      ],
     );
   }
 }
