@@ -10,6 +10,8 @@ class Observations extends StatefulWidget {
 }
 
 class _ObservationsState extends State<Observations> {
+  final _textFieldController = TextEditingController();
+
   @override
   void initState() {
     super.initState();
@@ -43,10 +45,18 @@ class _ObservationsState extends State<Observations> {
       body: Column(
         children: [
           TextField(
+            controller: _textFieldController,
             onChanged: (string) => dataModel.searchString = string,
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               labelText: 'Sök station',
-              prefixIcon: Icon(Icons.search),
+              prefixIcon: const Icon(Icons.search),
+              suffixIcon: IconButton(
+                onPressed: () {
+                  _textFieldController.clear();
+                  dataModel.searchString = '';
+                },
+                icon: const Icon(Icons.clear),
+              ),
             ),
           ),
           Expanded(
