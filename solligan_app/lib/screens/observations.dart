@@ -13,7 +13,9 @@ class _ObservationsState extends State<Observations> {
   @override
   void initState() {
     super.initState();
-    context.read<ObservationDataProvider>().setParameter('1');
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<ObservationDataProvider>().init();
+    });
   }
 
   @override
@@ -38,25 +40,38 @@ class _ObservationsState extends State<Observations> {
               icon: const Icon(Icons.update))
         ],
       ),
-      body: Builder(
-        builder: (context) {
-          final data = dataModel.data;
-          if (data == null) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          return ListView.builder(
-            itemCount: data.length,
-            itemBuilder: (context, index) {
-              final station = data[index];
-              final name = station.name;
-              final value = station.value?.value.toString();
-              return ListTile(
-                title: Text(name),
-                trailing: Text(value ?? 'värde saknas'),
-              );
-            },
-          );
-        },
+      body: Column(
+        children: [
+          TextField(
+            onChanged: (string) => dataModel.searchString = string,
+            decoration: const InputDecoration(
+              labelText: 'Sök station',
+              prefixIcon: Icon(Icons.search),
+            ),
+          ),
+          Expanded(
+            child: Builder(
+              builder: (context) {
+                final data = dataModel.data;
+                if (data == null) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                return ListView.builder(
+                  itemCount: data.length,
+                  itemBuilder: (context, index) {
+                    final station = data[index];
+                    final name = station.name;
+                    final value = station.value?.value;
+                    return ListTile(
+                      title: Text(name),
+                      trailing: Text(value ?? 'värde saknas'),
+                    );
+                  },
+                );
+              },
+            ),
+          )
+        ],
       ),
       drawer: Drawer(
         child: ListView(

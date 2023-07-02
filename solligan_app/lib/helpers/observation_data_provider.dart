@@ -23,21 +23,32 @@ const List<String> monthsSwedish = [
 
 class ObservationDataProvider extends ChangeNotifier {
   final Map<String, Parameter> _data = {};
-  String? _selectedParameter;
+  String _selectedParameter = '1';
+  String _searchString = '';
+
+  // getters and setters
+  List<Station>? get data => _data[_selectedParameter]?.filteredData;
 
   void setParameter(String parameter) async {
     if (_selectedParameter == parameter) return;
 
     _selectedParameter = parameter;
-    if (!_data.containsKey(parameter)) _data[parameter] = Parameter(parameter);
-    if (await _data[parameter]!.update()) notifyListeners();
+    if (_data.containsKey(parameter)) {
+      _data[parameter]!.applyFilters();
+    } else {
+      _data[parameter] = Parameter(this, parameter);
+      await _data[parameter]!.update();
+    }
+    notifyListeners();
   }
 
-  void requestUpdate() {
-    _data[_selectedParameter]?.update();
-  }
+  String get searchString => _searchString;
 
-  List<Station>? get data => _data[_selectedParameter]?.filteredData;
+  set searchString(String searchString) {
+    _searchString = searchString;
+    _data[_selectedParameter]?.applyFilters();
+    notifyListeners();
+  }
 
   String? get readableDate {
     DateTime? updated = _data[_selectedParameter]?._updated;
@@ -57,58 +68,84 @@ class ObservationDataProvider extends ChangeNotifier {
     if (updated == null) return null;
     return 'kl. ${updated.hour.toString().padLeft(2, '0')}:${updated.minute.toString().padLeft(2, '0')}';
   }
+
+  // other methods
+  void init() async {
+    debugPrint('ObservationDataProvider.init: entering');
+
+    _data[_selectedParameter] = Parameter(this, _selectedParameter);
+    await _data[_selectedParameter]!.update();
+
+    debugPrint('ObservationDataProvider.init: notifying listeners');
+    debugPrint('(has listeners?: ${hasListeners.toString()})');
+    notifyListeners();
+  }
+
+  void requestUpdate() async {
+    await _data[_selectedParameter]?.update();
+    debugPrint('ObservationDataProvider.requestUpdate: notifying listeners');
+    debugPrint('(has listeners?: ${hasListeners.toString()})');
+    notifyListeners();
+  }
 }
 
 class Parameter {
+  final ObservationDataProvider provider;
   final String parameterId;
 
   final List<Station> _allData = [];
   final List<Station> _filteredData = [];
   DateTime? _updated;
 
-  Parameter(this.parameterId);
+  Parameter(this.provider, this.parameterId);
 
   List<Station> get filteredData => _filteredData;
 
-  bool _checkForUpdate() {
+  Future<bool> _updateNeeded() async {
     if (_updated == null) return true;
-    return DateTime.now().difference(_updated!).inHours >= 1;
-  }
 
-  Future<bool> _update() async {
-    final latestHourUri = Uri.parse(
-        'https://opendata-download-metobs.smhi.se/api/version/1.0/parameter/$parameterId/station-set/all/period/latest-hour.json');
-    final latestHourJson = await getJsonFromUri(latestHourUri);
-    if (latestHourJson case {'updated': int updated}) {
-      final remoteUpdated = DateTime.fromMillisecondsSinceEpoch(updated);
-      if (_updated == null || remoteUpdated.isAfter(_updated!)) {
-        final dataUri = Uri.parse(
-            'https://opendata-download-metobs.smhi.se/api/version/1.0/parameter/$parameterId/station-set/all/period/latest-hour/data.json');
-        final dataJson = await getJsonFromUri(dataUri);
-        if (dataJson case {'updated': int updated, 'station': List stations}) {
-          _allData.clear();
-          for (final station in stations) {
-            _allData.add(Station.fromJson(station));
-          }
-          _updated = DateTime.fromMillisecondsSinceEpoch(updated);
-          _filterData();
-          return true;
-        }
-        throw const FormatException("Unexpected json format");
+    if (DateTime.now().difference(_updated!).inHours >= 1) {
+      // check if data has been updated on remote server
+      final uri = Uri.parse(
+          'https://opendata-download-metobs.smhi.se/api/version/1.0/parameter/$parameterId/station-set/all/period/latest-hour.json');
+      final json = await getJsonFromUri(uri);
+      if (json case {'updated': int updated}) {
+        return DateTime.fromMillisecondsSinceEpoch(updated).isAfter(_updated!);
       }
-      return false;
+      throw const FormatException('Unexpected json format');
     }
-    throw const FormatException("Unexpected json format");
+    return false;
   }
 
-  // returns true if data was updated
-  Future<bool> update() async {
-    if (!_checkForUpdate()) return false;
-    return _update();
+  Future<void> _update() async {
+    debugPrint('Paramter._update: entering');
+    // fetch data
+    final uri = Uri.parse(
+        'https://opendata-download-metobs.smhi.se/api/version/1.0/parameter/$parameterId/station-set/all/period/latest-hour/data.json');
+    final json = await getJsonFromUri(uri);
+
+    if (json case {'updated': int updated, 'station': List stations}) {
+      debugPrint('Parameter._update: updating ${stations.length} stations');
+      // replace local data
+      _allData.clear();
+      for (final station in stations) {
+        _allData.add(Station.fromJson(station));
+      }
+      _updated = DateTime.fromMillisecondsSinceEpoch(updated);
+      applyFilters();
+    } else {
+      throw const FormatException('Unexpected json format');
+    }
+  }
+
+  Future<void> update() async {
+    debugPrint('Parameter.update: entering');
+    if (await _updateNeeded()) await _update();
   }
 
   // TODO
-  void _filterData() {
+  void applyFilters() {
+    debugPrint('Parameter.applyFilters: entering');
     _filteredData.clear();
     _filteredData.addAll(_allData);
   }
