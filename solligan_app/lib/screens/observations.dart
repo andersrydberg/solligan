@@ -36,9 +36,7 @@ class _ObservationsState extends State<Observations> {
             ],
           ),
           IconButton(
-              onPressed: () {
-                dataModel.requestUpdate();
-              },
+              onPressed: dataModel.requestUpdate,
               icon: const Icon(Icons.update))
         ],
       ),
@@ -46,6 +44,8 @@ class _ObservationsState extends State<Observations> {
         children: [
           TextField(
             controller: _textFieldController,
+            autocorrect: false,
+            enableSuggestions: false,
             onChanged: (string) => dataModel.searchString = string,
             decoration: InputDecoration(
               labelText: 'Sök station',
@@ -84,6 +84,7 @@ class _ObservationsState extends State<Observations> {
         ],
       ),
       drawer: Drawer(
+        backgroundColor: Theme.of(context).primaryColor,
         child: ListView(
           children: const <Widget>[
             Text('Hello'),
