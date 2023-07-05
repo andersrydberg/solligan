@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:solligan_app/helpers/constants.dart';
 import 'package:solligan_app/helpers/observation_data_provider.dart';
 
 class Observations extends StatefulWidget {
@@ -16,6 +17,7 @@ class _ObservationsState extends State<Observations>
   final _textFieldController = TextEditingController();
   late final _iconAnimationController =
       AnimationController(vsync: this, duration: const Duration(seconds: 20));
+  // animate 40 revolutions in 20 seconds
   late final _rotateAnimation = Tween<double>(begin: 0.0, end: 80 * math.pi)
       .animate(_iconAnimationController);
 
@@ -36,10 +38,11 @@ class _ObservationsState extends State<Observations>
   @override
   Widget build(BuildContext context) {
     final dataModel = context.watch<ObservationDataProvider>();
+    const parameters = weatherParameters;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Temperatur'),
+        title: Text(parameters[dataModel.selectedParameter]!['title']!),
         actions: <Widget>[
           Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -58,6 +61,7 @@ class _ObservationsState extends State<Observations>
                 if (!updated) {
                   ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
                     content: Text('Inga nya observationer än...'),
+                    showCloseIcon: true,
                   ));
                 }
               });
@@ -96,10 +100,10 @@ class _ObservationsState extends State<Observations>
           Expanded(
             child: Builder(
               builder: (context) {
-                final data = dataModel.data;
-                if (data == null) {
+                if (dataModel.showCircularProgressIndicator) {
                   return const Center(child: CircularProgressIndicator());
                 }
+                final data = dataModel.data!;
                 return ListView.builder(
                   itemCount: data.length,
                   itemBuilder: (context, index) {
@@ -118,11 +122,52 @@ class _ObservationsState extends State<Observations>
         ],
       ),
       drawer: Drawer(
-        child: ListView(
-          children: const <Widget>[
-            Text('Hello'),
-            Text('World!'),
-          ],
+        child: SafeArea(
+          child: ListView(
+            padding: EdgeInsets.zero,
+            children: <Widget>[
+              Column(
+                children: [
+                  ListTile(
+                    title: Text(
+                      'Välj parameter',
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                  ),
+                  Builder(builder: (context) {
+                    String selected = dataModel.selectedParameter;
+                    return Wrap(
+                      spacing: 5.0,
+                      children: [
+                        for (final entry in parameters.entries)
+                          ChoiceChip(
+                            label: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  entry.value['title']!,
+                                ),
+                                Text(
+                                  entry.value['summary']!,
+                                  style: Theme.of(context).textTheme.bodySmall,
+                                ),
+                              ],
+                            ),
+                            selected: entry.key == selected,
+                            onSelected: (value) {
+                              if (value) {
+                                dataModel.selectedParameter = entry.key;
+                              }
+                              Scaffold.of(context).closeDrawer();
+                            },
+                          ),
+                      ],
+                    );
+                  }),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -143,79 +188,87 @@ class _OptionsBottomSheetState extends State<OptionsBottomSheet> {
     SortOption? selected = dataModel.selectedSortOption;
     bool? checked = dataModel.omitMissing;
 
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        CheckboxListTile(
-          title: const Text('Dölj saknade värden'),
-          value: checked,
-          controlAffinity: ListTileControlAffinity.leading,
-          onChanged: (value) {
-            setState(() {
-              checked = value;
-            });
-            if (value != null) dataModel.omitMissing = value;
-          },
+    return SafeArea(
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const SizedBox(height: 10),
+            CheckboxListTile(
+              title: const Text('Dölj saknade värden'),
+              value: checked,
+              controlAffinity: ListTileControlAffinity.leading,
+              onChanged: (value) {
+                setState(() {
+                  checked = value;
+                });
+                if (value != null) dataModel.omitMissing = value;
+              },
+            ),
+            ListTile(
+              title: Text(
+                'Sortera stationerna:',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+            ),
+            RadioListTile(
+              title: const Text('i bokstavsordning'),
+              value: SortOption.alphabetic,
+              groupValue: selected,
+              onChanged: (value) {
+                setState(() {
+                  selected = value;
+                });
+                if (value != null) dataModel.selectedSortOption = value;
+              },
+            ),
+            RadioListTile(
+              title: const Text('från nord till syd'),
+              value: SortOption.northToSouth,
+              groupValue: selected,
+              onChanged: (value) {
+                setState(() {
+                  selected = value;
+                });
+                if (value != null) dataModel.selectedSortOption = value;
+              },
+            ),
+            RadioListTile(
+              title: const Text('från syd till nord'),
+              value: SortOption.southToNorth,
+              groupValue: selected,
+              onChanged: (value) {
+                setState(() {
+                  selected = value;
+                });
+                if (value != null) dataModel.selectedSortOption = value;
+              },
+            ),
+            RadioListTile(
+              title: const Text('från högst värde till lägst'),
+              value: SortOption.highToLow,
+              groupValue: selected,
+              onChanged: (value) {
+                setState(() {
+                  selected = value;
+                });
+                if (value != null) dataModel.selectedSortOption = value;
+              },
+            ),
+            RadioListTile(
+              title: const Text('från lägst värde till högst'),
+              value: SortOption.lowToHigh,
+              groupValue: selected,
+              onChanged: (value) {
+                setState(() {
+                  selected = value;
+                });
+                if (value != null) dataModel.selectedSortOption = value;
+              },
+            ),
+          ],
         ),
-        const ListTile(
-          title: Text('Sortera stationerna:'),
-        ),
-        RadioListTile(
-          title: const Text('i bokstavsordning'),
-          value: SortOption.alphabetic,
-          groupValue: selected,
-          onChanged: (value) {
-            setState(() {
-              selected = value;
-            });
-            if (value != null) dataModel.selectedSortOption = value;
-          },
-        ),
-        RadioListTile(
-          title: const Text('från nord till syd'),
-          value: SortOption.northToSouth,
-          groupValue: selected,
-          onChanged: (value) {
-            setState(() {
-              selected = value;
-            });
-            if (value != null) dataModel.selectedSortOption = value;
-          },
-        ),
-        RadioListTile(
-          title: const Text('från syd till nord'),
-          value: SortOption.southToNorth,
-          groupValue: selected,
-          onChanged: (value) {
-            setState(() {
-              selected = value;
-            });
-            if (value != null) dataModel.selectedSortOption = value;
-          },
-        ),
-        RadioListTile(
-          title: const Text('från högst värde till lägst'),
-          value: SortOption.highToLow,
-          groupValue: selected,
-          onChanged: (value) {
-            setState(() {
-              selected = value;
-            });
-            if (value != null) dataModel.selectedSortOption = value;
-          },
-        ),
-        RadioListTile(
-          title: const Text('från lägst värde till högst'),
-          value: SortOption.lowToHigh,
-          groupValue: selected,
-          onChanged: (value) {
-            setState(() {
-              selected = value;
-            });
-            if (value != null) dataModel.selectedSortOption = value;
-          },
-        ),
-      ],
+      ),
     );
   }
 }

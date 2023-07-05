@@ -4,25 +4,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:solligan_app/helpers/dataclasses.dart';
-
-const List<String> monthsSwedish = [
-  '',
-  'januari',
-  'februari',
-  'mars',
-  'april',
-  'maj',
-  'juni',
-  'juli',
-  'augusti',
-  'september',
-  'oktober',
-  'november',
-  'december'
-];
-
-const smhiUrlPrefix =
-    'https://opendata-download-metobs.smhi.se/api/version/1.0/parameter/';
+import 'package:solligan_app/helpers/constants.dart';
 
 enum SortOption { alphabetic, northToSouth, southToNorth, highToLow, lowToHigh }
 
@@ -33,8 +15,12 @@ class ObservationDataProvider extends ChangeNotifier {
   bool _omitMissing = false;
   SortOption _selectedSortOption = SortOption.alphabetic;
 
+  bool showCircularProgressIndicator = true;
+
   // getters and setters
   List<Station>? get data => _data[_selectedParameter]?.filteredData;
+
+  String get selectedParameter => _selectedParameter;
 
   set selectedParameter(String parameter) {
     if (_selectedParameter == parameter) return;
@@ -44,8 +30,13 @@ class ObservationDataProvider extends ChangeNotifier {
       _data[parameter]!.applyFilters();
       notifyListeners();
     } else {
+      showCircularProgressIndicator = true;
+      notifyListeners();
       _data[parameter] = Parameter(this, parameter);
-      _data[parameter]!.update().then((_) => notifyListeners);
+      _data[parameter]!.update().then((_) {
+        showCircularProgressIndicator = false;
+        notifyListeners();
+      });
     }
   }
 
@@ -94,13 +85,9 @@ class ObservationDataProvider extends ChangeNotifier {
 
   // other methods
   void init() async {
-    debugPrint('ObservationDataProvider.init: entering');
-
     _data[_selectedParameter] = Parameter(this, _selectedParameter);
     await _data[_selectedParameter]!.update();
-
-    debugPrint('ObservationDataProvider.init: notifying listeners');
-    debugPrint('(has listeners?: ${hasListeners.toString()})');
+    showCircularProgressIndicator = false;
     notifyListeners();
   }
 
