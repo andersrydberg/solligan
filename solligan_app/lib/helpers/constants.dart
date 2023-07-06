@@ -9,7 +9,6 @@ const Map<String, Map<String, String>> weatherParameters = {
   "11": {"title": "Global irradians", "summary": "medelvärde 1 timme"},
   "12": {"title": "Sikt", "summary": "momentanvärde"},
   "13": {"title": "Rådande väder", "summary": "momentanvärde"},
-  "14": {"title": "Nederbördsmängd", "summary": "summa 15 min, 4 gånger/tim"},
   "16": {"title": "Total molnmängd", "summary": "momentanvärde"},
   "21": {"title": "Byvind", "summary": "max"},
   "24": {

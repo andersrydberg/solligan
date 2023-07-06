@@ -41,86 +41,133 @@ class _ObservationsState extends State<Observations>
     const parameters = weatherParameters;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(parameters[dataModel.selectedParameter]!['title']!),
-        actions: <Widget>[
-          Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(dataModel.readableDate ?? ''),
-              Text(dataModel.readableTime ?? ''),
+      body: CustomScrollView(
+        slivers: [
+          SliverAppBar(
+            title: Text(parameters[dataModel.selectedParameter]!['title']!),
+            pinned: true,
+            floating: true,
+            actions: <Widget>[
+              Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(dataModel.readableDate ?? ''),
+                  Text(dataModel.readableTime ?? ''),
+                ],
+              ),
+              AnimatedUpdateIcon(
+                animation: _rotateAnimation,
+                callback: () {
+                  _iconAnimationController.forward();
+                  dataModel.requestUpdate().then((updated) {
+                    _iconAnimationController.stop();
+                    _iconAnimationController.reset();
+                    if (!updated) {
+                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                        content: Text('Inga nya observationer än...'),
+                        showCloseIcon: true,
+                      ));
+                    }
+                  });
+                },
+              ),
+              IconButton(
+                onPressed: () {
+                  showModalBottomSheet(
+                    context: context,
+                    builder: (context) => const OptionsBottomSheet(),
+                  );
+                },
+                icon: const Icon(Icons.tune),
+              ),
             ],
           ),
-          AnimatedUpdateIcon(
-            animation: _rotateAnimation,
-            callback: () {
-              _iconAnimationController.forward();
-              dataModel.requestUpdate().then((updated) {
-                _iconAnimationController.stop();
-                _iconAnimationController.reset();
-                if (!updated) {
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                    content: Text('Inga nya observationer än...'),
-                    showCloseIcon: true,
-                  ));
-                }
-              });
-            },
-          ),
-          IconButton(
-            onPressed: () {
-              showModalBottomSheet(
-                context: context,
-                builder: (context) => const OptionsBottomSheet(),
-              );
-            },
-            icon: const Icon(Icons.tune),
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          TextField(
-            controller: _textFieldController,
-            autocorrect: false,
-            enableSuggestions: false,
-            onChanged: (string) => dataModel.searchString = string,
-            decoration: InputDecoration(
-              labelText: 'Sök station',
-              prefixIcon: const Icon(Icons.search),
-              suffixIcon: IconButton(
-                onPressed: () {
-                  _textFieldController.clear();
-                  dataModel.searchString = '';
-                },
-                icon: const Icon(Icons.clear),
+          SliverToBoxAdapter(
+            child: TextField(
+              controller: _textFieldController,
+              autocorrect: false,
+              enableSuggestions: false,
+              onChanged: (string) => dataModel.searchString = string,
+              decoration: InputDecoration(
+                labelText: 'Sök station',
+                prefixIcon: const Icon(Icons.search),
+                suffixIcon: IconButton(
+                  onPressed: () {
+                    _textFieldController.clear();
+                    dataModel.searchString = '';
+                  },
+                  icon: const Icon(Icons.clear),
+                ),
               ),
             ),
           ),
-          Expanded(
-            child: Builder(
-              builder: (context) {
-                if (dataModel.showCircularProgressIndicator) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                final data = dataModel.data!;
-                return ListView.builder(
-                  itemCount: data.length,
-                  itemBuilder: (context, index) {
-                    final station = data[index];
-                    final name = station.name;
-                    final value = station.value?.value;
-                    return ListTile(
-                      title: Text(name),
-                      trailing: Text(value ?? 'värde saknas'),
-                    );
-                  },
-                );
-              },
-            ),
-          )
+          Builder(
+            builder: (context) {
+              if (dataModel.showCircularProgressIndicator) {
+                return const SliverToBoxAdapter(
+                    child: Expanded(
+                        child: Center(child: CircularProgressIndicator())));
+              }
+              final data = dataModel.data!;
+              return SliverList.builder(
+                itemCount: data.length,
+                itemBuilder: (context, index) {
+                  final station = data[index];
+                  final name = station.name;
+                  final value = station.value?.value;
+                  return ListTile(
+                    title: Text(name),
+                    trailing: Text(value ?? 'värde saknas'),
+                  );
+                },
+              );
+            },
+          ),
         ],
       ),
+      // Column(
+      //   children: [
+      //     TextField(
+      //       controller: _textFieldController,
+      //       autocorrect: false,
+      //       enableSuggestions: false,
+      //       onChanged: (string) => dataModel.searchString = string,
+      //       decoration: InputDecoration(
+      //         labelText: 'Sök station',
+      //         prefixIcon: const Icon(Icons.search),
+      //         suffixIcon: IconButton(
+      //           onPressed: () {
+      //             _textFieldController.clear();
+      //             dataModel.searchString = '';
+      //           },
+      //           icon: const Icon(Icons.clear),
+      //         ),
+      //       ),
+      //     ),
+      //     Expanded(
+      //       child: Builder(
+      //         builder: (context) {
+      //           if (dataModel.showCircularProgressIndicator) {
+      //             return const Center(child: CircularProgressIndicator());
+      //           }
+      //           final data = dataModel.data!;
+      //           return ListView.builder(
+      //             itemCount: data.length,
+      //             itemBuilder: (context, index) {
+      //               final station = data[index];
+      //               final name = station.name;
+      //               final value = station.value?.value;
+      //               return ListTile(
+      //                 title: Text(name),
+      //                 trailing: Text(value ?? 'värde saknas'),
+      //               );
+      //             },
+      //           );
+      //         },
+      //       ),
+      //     )
+      //   ],
+      // ),
       drawer: Drawer(
         child: SafeArea(
           child: ListView(
