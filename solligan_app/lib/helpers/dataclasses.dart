@@ -1,5 +1,7 @@
 import 'package:latlong2/latlong.dart';
 
+const distanceCalculator = Haversine();
+
 class Station {
   final String key;
   final String name;
@@ -62,6 +64,10 @@ class Station {
           value: valueAsObj);
     }
     throw const FormatException("Unexpected station format");
+  }
+
+  double calcDistanceFrom(LatLng location) {
+    return distanceCalculator.distance(latLng, location);
   }
 }
 

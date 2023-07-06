@@ -2,11 +2,20 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
+import 'package:latlong2/latlong.dart';
 import 'package:solligan_app/helpers/dataclasses.dart';
 import 'package:solligan_app/helpers/constants.dart';
 
-enum SortOption { alphabetic, northToSouth, southToNorth, highToLow, lowToHigh }
+enum SortOption {
+  alphabetic,
+  byDistance,
+  northToSouth,
+  southToNorth,
+  highToLow,
+  lowToHigh
+}
 
 class ObservationDataProvider extends ChangeNotifier {
   final Map<String, Parameter> _data = {};
@@ -16,6 +25,9 @@ class ObservationDataProvider extends ChangeNotifier {
   SortOption _selectedSortOption = SortOption.alphabetic;
 
   bool showCircularProgressIndicator = true;
+
+  bool locationPermissionObtained = false;
+  LatLng? currentLocation;
 
   // getters and setters
   List<Station>? get data => _data[_selectedParameter]?.filteredData;
@@ -62,6 +74,13 @@ class ObservationDataProvider extends ChangeNotifier {
     _selectedSortOption = option;
     _data[_selectedParameter]?.applyFilters();
     notifyListeners();
+
+    // hack to avoid having to re-write setters; these would need to
+    // be declared as async in order to await applyFilters (only needed
+    // when user selects the distance filter option for the first time)
+    Future.delayed(const Duration(seconds: 2)).then((_) {
+      notifyListeners();
+    });
   }
 
   String? get readableDate {
@@ -159,7 +178,7 @@ class Parameter {
     return false;
   }
 
-  void applyFilters() {
+  void applyFilters() async {
     debugPrint('Parameter.applyFilters: entering');
     _filteredData.clear();
     _filteredData.addAll(_allData);
@@ -181,6 +200,17 @@ class Parameter {
       case SortOption.alphabetic:
         // already "sorted" (do nothing)
         break;
+      case SortOption.byDistance:
+        if (_provider.currentLocation == null) {
+          final position = await Geolocator.getCurrentPosition(
+              desiredAccuracy: LocationAccuracy.low);
+          _provider.currentLocation =
+              LatLng(position.latitude, position.longitude);
+        }
+        final location = _provider.currentLocation!;
+        _filteredData.sort((a, b) => a
+            .calcDistanceFrom(location)
+            .compareTo(b.calcDistanceFrom(location)));
       case SortOption.northToSouth:
         _filteredData
             .sort((a, b) => b.latLng.latitude.compareTo(a.latLng.latitude));

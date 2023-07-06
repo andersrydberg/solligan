@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:provider/provider.dart';
 import 'package:solligan_app/helpers/constants.dart';
 import 'package:solligan_app/helpers/observation_data_provider.dart';
@@ -24,9 +25,12 @@ class _ObservationsState extends State<Observations>
   @override
   void initState() {
     super.initState();
+    final dataModel = context.read<ObservationDataProvider>();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<ObservationDataProvider>().init();
+      dataModel.init();
     });
+    _requestLocationPermission()
+        .then((value) => dataModel.locationPermissionObtained = value);
   }
 
   @override
@@ -270,6 +274,21 @@ class _OptionsBottomSheetState extends State<OptionsBottomSheet> {
               },
             ),
             RadioListTile(
+              title: const Text('efter avstånd, närmast först'),
+              value: SortOption.byDistance,
+              groupValue: selected,
+              onChanged: (value) async {
+                if (!dataModel.locationPermissionObtained) {
+                  final permissionGranted = await _requestLocationPermission();
+                  if (!permissionGranted) return;
+                }
+                setState(() {
+                  selected = value;
+                });
+                if (value != null) dataModel.selectedSortOption = value;
+              },
+            ),
+            RadioListTile(
               title: const Text('från nord till syd'),
               value: SortOption.northToSouth,
               groupValue: selected,
@@ -338,4 +357,28 @@ class AnimatedUpdateIcon extends AnimatedWidget {
       ),
     );
   }
+}
+
+// adapted from https://pub.dev/packages/geolocator
+Future<bool> _requestLocationPermission() async {
+  bool serviceEnabled;
+  LocationPermission permission;
+
+  // Test if location services are enabled.
+  serviceEnabled = await Geolocator.isLocationServiceEnabled();
+  if (!serviceEnabled) {
+    return false;
+  }
+  permission = await Geolocator.checkPermission();
+  if (permission == LocationPermission.denied) {
+    permission = await Geolocator.requestPermission();
+    if (permission == LocationPermission.denied) {
+      return false;
+    }
+  }
+  if (permission == LocationPermission.deniedForever) {
+    // Permissions are denied forever, handle appropriately.
+    return false;
+  }
+  return true;
 }
