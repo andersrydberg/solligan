@@ -87,13 +87,13 @@ class ObservationDataProvider extends ChangeNotifier {
     DateTime? updated = _data[_selectedParameter]?._updated;
     if (updated == null) return null;
     final now = DateTime.now();
-    switch (now.difference(updated).inDays) {
-      case 0:
-        return 'idag';
-      case 1:
-        return 'igår';
+    if (now.difference(updated).inDays >= 2) {
+      return '${updated.day} ${monthsSwedish[updated.month]}';
     }
-    return '${updated.day} ${monthsSwedish[updated.month]}';
+    if (now.day != updated.day) {
+      return 'igår';
+    }
+    return 'idag';
   }
 
   String? get readableTime {
